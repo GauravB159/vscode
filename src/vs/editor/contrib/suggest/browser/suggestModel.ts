@@ -512,7 +512,14 @@ export class SuggestModel implements IDisposable {
 
 			if (existing) {
 				const cmpFn = getSuggestionComparator(snippetSortOrder);
-				items = items.concat(existing.items).sort(cmpFn);
+				const filterDuplicates = (item: CompletionItem) => {
+					const checkLabel = (existing_item: CompletionItem) => existing_item.textLabel === item.textLabel;
+					const sameLabel = existing.items.findIndex(checkLabel) === -1;
+					const isVariable = item.textLabel[0] === '$';
+					const isTextKind = item.completion.kind === CompletionItemKind.Text;
+					return isVariable && sameLabel && isTextKind;
+				};
+				items = items.filter(filterDuplicates).concat(existing.items).sort(cmpFn);
 			}
 
 			const ctx = new LineContext(model, this._editor.getPosition(), auto, context.shy, context.noSelect);
@@ -658,7 +665,7 @@ export class SuggestModel implements IDisposable {
 		if (ctx.column > this._context.column && this._completionModel.incomplete.size > 0 && ctx.leadingWord.word.length !== 0) {
 			// typed -> moved cursor RIGHT & incomple model & still on a word -> retrigger
 			const { incomplete } = this._completionModel;
-			const items = this._completionModel.adopt(incomplete);
+			const items = this._completionModel.items;
 			this.trigger({ auto: this._state === State.Auto, shy: false, noSelect: false, triggerKind: CompletionTriggerKind.TriggerForIncompleteCompletions }, true, incomplete, { items, clipboardText: this._completionModel.clipboardText });
 
 		} else {

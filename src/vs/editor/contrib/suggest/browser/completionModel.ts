@@ -173,7 +173,7 @@ export class CompletionModel {
 			const overwriteBefore = item.position.column - item.editStart.column;
 			const wordLen = overwriteBefore + characterCountDelta - (item.position.column - this._column);
 			if (word.length !== wordLen) {
-				word = wordLen === 0 ? '' : leadingLineContent.slice(-wordLen);
+				word = wordLen === 0 ? '' : leadingLineContent.slice(-wordLen).trimStart();
 				wordLow = word.toLowerCase();
 			}
 
@@ -226,6 +226,9 @@ export class CompletionModel {
 						item.score[0] = match[0]; // use score from filterText
 					}
 
+				} else if (!word.replace(/\s/g, '').length) {
+					// Do not filter for a string with only spaces, or empty
+					item.score = FuzzyScore.Default;
 				} else {
 					// by default match `word` against the `label`
 					const match = scoreFn(word, wordLow, wordPos, item.textLabel, item.labelLow, 0, this._fuzzyScoreOptions);
